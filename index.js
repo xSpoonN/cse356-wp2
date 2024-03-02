@@ -27,8 +27,6 @@ app.listen(PORT, () => {
 app.use(express.json());
 
 app.post("/adduser", async (req, res) => {
-  console.log(req);
-  console.log(req.body)
   const {username, password, email} = req.body;
   console.log(username, password, email)
 
@@ -46,12 +44,12 @@ app.post("/adduser", async (req, res) => {
       verificationToken: verificationKey
     });
     await newUser.save();
-    const hostname = "0.0.0.0"; // @todo get the host ip
+    const hostname = "194.113.74.157"; // @todo get the host ip
     const verificationLink = `http://${hostname}/verify?email=${email}&token=${verificationKey}`;
     console.log(verificationLink)
 
     const transporter = nodemailer.createTransport({
-      host: host.docker.internal,
+      host: hostname,
       port: 25
     })
 
