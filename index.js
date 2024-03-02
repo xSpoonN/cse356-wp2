@@ -4,15 +4,92 @@ const nodemailer = require('nodemailer');
 const bodyParser = require('body-parser');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
+const winston = require('winston');
+const morgan = require('morgan');
 const User = require('./User');
 const app = express();
 const PORT = 3000; //@todo change to 80
+
+const { combine, timestamp, colorize, align, printf } = winston.format;
+
+// create a custom timestamp format for log statements
+const timezoned = () => {
+  const date = new Date().toLocaleString('en-US', {
+    timeZone: 'America/New_York',
+  });
+  const [datePart, timePart] = date.split(', ');
+  const [month, day, year] = datePart.split('/');
+  const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  const [time, ampm] = timePart.split(' ');
+  let [hours, minutes, seconds] = time.split(':');
+
+  return `${formattedDate} ${hours.padStart(2, '0')}:${minutes}:${seconds} ${ampm}`;
+};
+
+/* create a custom logger
+ 1) /dev/stdout logger for http requests
+ 2) ./logs/debug.log logger for debug logs (additional logs can be done with logger.debug(message)) 
+*/
+const logger = winston.createLogger({
+  transports: [
+    new winston.transports.Console({
+      level: 'http',
+      format: combine(
+        colorize({ all: true }),
+        timestamp({
+          format: timezoned,
+        }),
+        align(),
+        printf(info => `[${info.timestamp}] ${info.message}`)
+      ),
+    }),
+    new winston.transports.File({
+      level: 'debug',
+      filename: './logs/debug.log',
+      format: combine(
+        timestamp({
+          format: timezoned,
+        }),
+        align(),
+        printf(info => `[${info.timestamp}] ${info.message}`)
+      ),
+      handleExceptions: true,
+    }),
+  ],
+});
+
+// create a middleware that captures http requests and logs
+morgan.token('body', req => {
+  return JSON.stringify(req.body);
+});
+const morganMiddleware = morgan(
+  function (tokens, req, res) {
+    return [
+      tokens.method(req, res),
+      decodeURI(tokens.url(req, res)),
+      tokens.status(req, res),
+      '-',
+      tokens['response-time'](req, res),
+      'ms',
+      tokens.body(req),
+    ].join(' ');
+  },
+  {
+    stream: {
+      write: message => {
+        logger.http(message.trim());
+      },
+    },
+  }
+);
 
 const clientPromise = mongoose
   .connect(
     'mongodb+srv://ktao87:zTFcTXa1vY7emrzk@wup2.tp4o37r.mongodb.net/?retryWrites=true&w=majority'
   )
   .then(m => m.connection.getClient()); // @todo check if this works
+
+app.use(morganMiddleware);
 
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
