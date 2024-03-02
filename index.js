@@ -8,6 +8,14 @@ const PORT = 3000;
 
 mongoose.connect('mongodb+srv://ktao87:zTFcTXa1vY7emrzk@wup2.tp4o37r.mongodb.net/?retryWrites=true&w=majority'); // @todo check if this works
 
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  res.header('X-CSE356', '65b99ec7c9f3cb0d090f2236')
+  next();
+})
+
 app.get("/", (req, res) => {
   res.send("Hello World!");
 });
