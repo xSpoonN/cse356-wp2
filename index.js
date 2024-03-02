@@ -50,7 +50,10 @@ app.post("/adduser", async (req, res) => {
 
     const transporter = nodemailer.createTransport({
       host: hostname,
-      port: 25
+      port: 25,
+      tls: {
+        rejectUnauthorized: false
+      }
     })
 
     // @todo Figure out how to send email - this is just a placeholder
