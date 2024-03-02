@@ -26,14 +26,6 @@ app.listen(PORT, () => {
 
 app.use(express.json());
 
-const transporter = nodemailer.createTransport({ // @todo configure this with our own mail server
-  service: "",
-  auth: {
-    user: "",
-    pass: ""
-  }
-});
-
 app.post("/adduser", async (req, res) => {
   console.log(req);
   console.log(req.body)
@@ -43,7 +35,7 @@ app.post("/adduser", async (req, res) => {
   try {
     const existingUser = await User.findOne({$or: [{username}, {email}]}); // Check if the username or email already exists
     if (existingUser) {
-      return res.status(400).send("User already exists");
+      return res.status(400).send({status: "ERROR", message: "User already exists"});
     }
 
     const verificationKey = Math.random().toString(36).substring(7); // Generate a random verification key - @todo may need to use crypto.randomBytes
@@ -58,20 +50,49 @@ app.post("/adduser", async (req, res) => {
     const verificationLink = `http://${hostname}/verify?email=${email}&token=${verificationKey}`;
     console.log(verificationLink)
 
+    const transporter = nodemailer.createTransport({
+      host: host.docker.internal,
+      port: 25
+    })
+
     // @todo Figure out how to send email - this is just a placeholder
-    /* const mailOptions = {
-      from: "",
+    const mailOptions = {
+      from: "warmupproject2@cse356.com",
       to: email,
       subject: "Account Verification",
       text: `Please click the following link to verify your account: ${verificationLink}`
     };
-    await transporter.sendMail(mailOptions); */
+    const resp = await transporter.sendMail(mailOptions);
+    console.log(resp);
 
-    res.status(201).send("User created successfully. Check your email for verification.");
+    res.status(201).send({status: "OK", message: "User created successfully. Check your email for verification."});
   } catch (error) {
     console.error(error);
-    res.status(500).send("Internal server error");
+    res.status(500).send({status: "ERROR", message: "Internal server error"});
   }
+});
+
+app.post("/test", async (req, res) => {
+  const email = req.body.email;
+  const verificationKey = Math.random().toString(36).substring(7); // Generate a random verification key - @todo may need to use crypto.randomBytes
+  const hostname = "localhost"; // @todo get the host ip
+  const verificationLink = `http://${hostname}/verify?email=${email}&token=${verificationKey}`;
+  console.log(verificationLink)
+
+  const transporter = nodemailer.createTransport({
+    host: host.docker.internal,
+    port: 25
+  })
+
+  // @todo Figure out how to send email - this is just a placeholder
+  const mailOptions = {
+    from: "warmupproject2@cse356.com",
+    to: email,
+    subject: "Account Verification",
+    text: `Please click the following link to verify your account: ${verificationLink}`
+  };
+  const resp = await transporter.sendMail(mailOptions);
+  console.log(resp);
 });
 
 app.get("/verify", async (req, res) => {
@@ -81,15 +102,15 @@ app.get("/verify", async (req, res) => {
   try {
     const user = await User.findOne({email, verificationToken: token});
     if (!user) {
-      return res.status(400).send("Invalid verification link");
+      return res.status(400).send({status: "ERROR", message: "Invalid verification link"});
     }
 
     user.verified = true;
     user.verificationToken = "";
     await user.save();
-    res.status(200).send("User verified successfully");
+    res.status(200).send({status: "OK", message: "User verified successfully"});
   } catch (error) {
     console.error(error);
-    res.status(500).send("Internal server error");
+    res.status(500).send({status: "ERROR", message: "Internal server error"});
   }
 });
