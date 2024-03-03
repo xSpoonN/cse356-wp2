@@ -1,17 +1,32 @@
 <!DOCTYPE html>
 <html>
+  <head>
+    <style>
+      #wp2 {
+        overflow: hidden;
+        user-select: none;
+      }
+
+      #image-container {
+        display: inline-block;
+      }
+    </style>
+  </head>
   <body>
-
-
     <input type="radio" name="style" value="color" checked> Color
     <input type="radio" name="style" value="bw"> Black & White
 
-    <div id="wp2"></div>
+    <div id="wp2">
+      <div id="image-container">
+      </div>
+    </div>
     <script>
       let wp2 = document.getElementById('wp2');
+      let wp2Container = document.getElementById('image-container');
+      let prevZoom = -1;
       let zoom = 2; 
-      let x = 0;
-      let y = 0;
+      let offsetX = 0;
+      let offsetY = 0;
 
       wp2.addEventListener('wheel', e => {
         const delta = e.deltaY;
@@ -21,6 +36,26 @@
           zoom--; 
         }
         updateImage();  
+      });
+
+      wp2.addEventListener('mousedown', e => {
+        e.preventDefault();
+        let startX = e.clientX - offsetX;
+        let startY = e.clientY - offsetY;
+
+        function move(e) {
+          offsetX = e.clientX - startX;
+          offsetY = e.clientY - startY;
+          updateImage();
+        }
+
+        function up() {
+          window.removeEventListener('mousemove', move);
+          window.removeEventListener('mouseup', up);
+        }
+
+        window.addEventListener('mousemove', move);
+        window.addEventListener('mouseup', up);
       });
 
       async function loadImage(img, src, skipCheck = false) {
@@ -36,96 +71,80 @@
       }
 
       async function updateImage() {
-        let layer = Math.max(1, Math.min(8, Math.floor(zoom)));
-        wp2.innerHTML = '';
-        let i = 1; // Row iterator
-        let breaki = false; // Should break outer loop
-        let j = 1; // Col iterator
-        let maxj = 1; // Maximum number of columns in the grid
+        if (prevZoom !== zoom) { // If the zoom has changed, we need to recompute the grid
+          wp2Container.innerHTML = '';
+          let layer = Math.max(1, Math.min(8, Math.floor(zoom)));
+          let i = 1; // Row iterator
+          let breaki = false; // Should break outer loop
+          let j = 1; // Col iterator
+          let maxj = 1; // Maximum number of columns in the grid
 
-        let minWidth = -1; // To compute bottom right corner size
-        let minHeight = -1; // To compute bottom right corner size
+          let minWidth = -1; // To compute bottom right corner size
+          let minHeight = -1; // To compute bottom right corner size
+          outer: while (!breaki) {
+            let rowSafe = false; // If this row has at least one image
+            inner: while (true) {
+              if (i > 1 && j > maxj) break inner; // If we have already found the maximum number of columns in the grid, just break when we hit it
+              let img = document.createElement('img');
 
-        outer: while (!breaki) {
-          let rowSafe = false; // If this row has at least one image
-          inner: while (true) {
-            if (i > 1 && j > maxj) break inner; // If we have already found the maximum number of columns in the grid, just break when we hit it
-            let img = document.createElement('img');
-
-            try {
-              // j < maxj && rowSafe is to skip waiting for the response if we already know there are at least this many images in the row
-              // This is to massively speed up the loading of the grid, since we don't have to wait for the response of the inner images.
-              const imgResp = await loadImage(img, `http://localhost:3000/tiles/l${layer}/${i}/${j}?style=${getStyle()}`, j < maxj && rowSafe);
-              if (imgResp) {
-                rowSafe = true; // We have at least one image in the row, so we can continue skipping for this row
-                img.style.objectFit = "cover";
-                wp2.appendChild(img);
-                j++;
-              } else {
+              try {
+                // j < maxj && rowSafe is to skip waiting for the response if we already know there are at least this many images in the row
+                // This is to massively speed up the loading of the grid, since we don't have to wait for the response of the inner images.
+                const imgResp = await loadImage(img, `http://localhost:3000/tiles/l${layer}/${i}/${j}?style=${getStyle()}`, j < maxj && rowSafe);
+                if (imgResp) {
+                  rowSafe = true; // We have at least one image in the row, so we can continue skipping for this row
+                  img.style.objectFit = "cover";
+                  wp2Container.appendChild(img);
+                  j++;
+                } else {
+                  if (j-1 > maxj) maxj = j-1;
+                  if (j == 1) breaki = true;
+                  break inner; // If we don't get a response, we are at the end of the row
+                }
+              } catch (e) {
                 if (j-1 > maxj) maxj = j-1;
                 if (j == 1) breaki = true;
                 break inner; // If we don't get a response, we are at the end of the row
               }
-            } catch (e) {
-              if (j-1 > maxj) maxj = j-1;
-              if (j == 1) breaki = true;
-              break inner; // If we don't get a response, we are at the end of the row
             }
+            if (breaki) break outer;
+            i++; 
+            j = 1;
           }
-          if (breaki) break outer;
-          i++; 
-          j = 1;
+          prevZoom = zoom;
+          console.log(` rows: ${i-1} cols: ${maxj}`)
+          wp2Container.style.gridTemplateColumns = `repeat(${maxj}, ${1000/(maxj)}px)`; // Calculate the grid columns
+          wp2Container.style.gap = '0';
+          wp2Container.style.display = 'grid';
+          // console.log("computed dim", (1000/maxj))
+          for (let img of wp2Container.children) {
+            img.style.maxWidth = `${1000/(maxj)}px`;
+            img.style.maxHeight = `${1000/(i-1)}px`;
+            const computedStyle = window.getComputedStyle(img)
+            const computedWidth = parseFloat(computedStyle.width.replace('px', ''));
+            const computedHeight = parseFloat(computedStyle.height.replace('px', ''));
+            if (minWidth === -1 || computedWidth < minWidth) minWidth = computedWidth;
+            if (minHeight === -1 || computedHeight < minHeight) minHeight = computedHeight;
+          }
+          wp2Container.lastChild.style.maxWidth = `${minWidth}px`; // The bottom right corner image has the minimum width and height out of all of them
+          wp2Container.lastChild.style.maxHeight = `${minHeight}px`;
+        } else {
+          /* for (let img of wp2.children) {
+            img.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+          } */
+          wp2Container.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
         }
-        console.log(` rows: ${i-1} cols: ${maxj}`)
-        wp2.style.gridTemplateColumns = `repeat(${maxj}, ${1000/(maxj)}px)`; // Calculate the grid columns
-        wp2.style.gap = '0';
-        wp2.style.display = 'grid';
-        // console.log("computed dim", (1000/maxj))
-        for (let img of wp2.children) {
-          img.style.maxWidth = `${1000/(maxj)}px`;
-          img.style.maxHeight = `${1000/(i-1)}px`;
-          const computedStyle = window.getComputedStyle(img)
-          const computedWidth = parseFloat(computedStyle.width.replace('px', ''));
-          const computedHeight = parseFloat(computedStyle.height.replace('px', ''));
-          if (minWidth === -1 || computedWidth < minWidth) minWidth = computedWidth;
-          if (minHeight === -1 || computedHeight < minHeight) minHeight = computedHeight;
-        }
-        wp2.lastChild.style.maxWidth = `${minWidth}px`; // The bottom right corner image has the minimum width and height out of all of them
-        wp2.lastChild.style.maxHeight = `${minHeight}px`;
       }
 
       function getStyle() {
         return document.querySelector('input[name="style"]:checked').value; 
       }
 
-      wp2.addEventListener('mousedown', handleDrag);
       document.querySelectorAll('input[name="style"]').forEach((radio) => {
         radio.addEventListener('change', () => {
           updateImage();
         });
       });
-
-      function handleDrag(e) { // Doesn't work yet, just placeholder
-
-        let startX = e.pageX;
-        let startY = e.pageY;
-
-        function onMove(e) {
-          x += e.pageX - startX;
-          y += e.pageY - startY;
-          updateImage();
-          startX = e.pageX; 
-          startY = e.pageY;
-        }
-
-        document.addEventListener('mousemove', onMove);
-
-        document.addEventListener('mouseup', () => {
-          document.removeEventListener('mousemove', onMove);
-        }, {once: true});
-
-      }
-
       updateImage();
     </script>
   </body>
