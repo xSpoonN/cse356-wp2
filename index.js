@@ -1,7 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const nodemailer = require('nodemailer');
-const bodyParser = require('body-parser');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
 const winston = require('winston');
@@ -11,7 +10,7 @@ const path = require('path');
 const sharp = require('sharp');
 const User = require('./User');
 const app = express();
-const PORT = 3000; //@todo change to 80
+const PORT = 3000;
 
 const { combine, timestamp, colorize, align, printf } = winston.format;
 
@@ -123,8 +122,29 @@ app.get('/', (req, res) => {
 });
 
 app.post('/adduser', async (req, res) => {
-  const { username, password, email } = req.body;
-  console.log(username, password, email);
+  // Check if username, password, and email are provided
+  const { body } = req;
+  if (!('username' in body && 'password' in body && 'email' in body)) {
+    return res.status(400).send({
+      status: 'ERROR',
+      message: 'Username, password, and email are required',
+    });
+  }
+  const { username, password, email } = body;
+
+  // Check if username, password, and email are truthy value
+  if (!username || !password || !email) {
+    return res.status(400).send({
+      status: 'ERROR',
+      message: 'Username, password, and email are required',
+    });
+  }
+
+  // Validate email
+  const emailRegex = /\S+@\S+\.\S+/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).send({ status: 'ERROR', message: 'Invalid email' });
+  }
 
   try {
     const existingUser = await User.findOne({ $or: [{ username }, { email }] }); // Check if the username or email already exists
@@ -134,6 +154,7 @@ app.post('/adduser', async (req, res) => {
         .send({ status: 'ERROR', message: 'User already exists' });
     }
 
+    // Create a new user
     const verificationKey = Math.random().toString(36).substring(7); // Generate a random verification key - @todo may need to use crypto.randomBytes
     const newUser = new User({
       username,
@@ -142,62 +163,59 @@ app.post('/adduser', async (req, res) => {
       verificationToken: verificationKey,
     });
     await newUser.save();
-    const hostname = '194.113.74.157';
-    const verificationLink = `http://${hostname}/verify?email=${email}&token=${verificationKey}`;
-    console.log(verificationLink);
 
+    // Send verification email
     const transporter = nodemailer.createTransport({
-      host: hostname,
       port: 25,
+      host: '127.0.0.1',
+      secure: false,
+      tls: {
+        rejectUnauthorized: false,
+      },
     });
 
-    // @todo Figure out how to send email - this is just a placeholder
+    const verificationLink = `http://mygroup.cse356.compas.cs.stonybrook.edu/verify?email=${email}&token=${verificationKey}`;
     const mailOptions = {
-      from: 'warmupproject2@cse356.com',
+      from: 'mygroup@cse356.compas.cs.stonybrook.edu',
       to: email,
       subject: 'Account Verification',
       text: `Please click the following link to verify your account: ${verificationLink}`,
     };
-    const resp = await transporter.sendMail(mailOptions);
-    console.log(resp);
+    await transporter.sendMail(mailOptions);
 
     res.status(201).send({
       status: 'OK',
       message: 'User created successfully. Check your email for verification.',
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).send({ status: 'ERROR', message: 'Internal server error' });
   }
 });
 
-app.post('/test', async (req, res) => {
-  const email = req.body.email;
-  const verificationKey = Math.random().toString(36).substring(7); // Generate a random verification key - @todo may need to use crypto.randomBytes
-  const hostname = 'localhost'; // @todo get the host ip
-  const verificationLink = `http://${hostname}/verify?email=${email}&token=${verificationKey}`;
-  console.log(verificationLink);
-
-  const transporter = nodemailer.createTransport({
-    host: host.docker.internal,
-    port: 25,
-  });
-
-  // @todo Figure out how to send email - this is just a placeholder
-  const mailOptions = {
-    from: 'warmupproject2@cse356.com',
-    to: email,
-    subject: 'Account Verification',
-    text: `Please click the following link to verify your account: ${verificationLink}`,
-  };
-  const resp = await transporter.sendMail(mailOptions);
-  console.log(resp);
-});
-
 app.get('/verify', async (req, res) => {
+  // Check if email and token are provided
+  if (!('email' in req.query && 'token' in req.query)) {
+    return res
+      .status(400)
+      .send({ status: 'ERROR', message: 'Email and token are required' });
+  }
   const { email, token } = req.query;
-  console.log(email, token);
 
+  // Check if email and token are truthy value
+  if (!email || !token) {
+    return res
+      .status(400)
+      .send({ status: 'ERROR', message: 'Email and token are required' });
+  }
+
+  // Validate email
+  const emailRegex = /\S+@\S+\.\S+/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).send({ status: 'ERROR', message: 'Invalid email' });
+  }
+
+  //Check if user exists and token is valid
   try {
     const user = await User.findOne({ email, verificationToken: token });
     if (!user) {
@@ -213,7 +231,7 @@ app.get('/verify', async (req, res) => {
       .status(200)
       .send({ status: 'OK', message: 'User verified successfully' });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).send({ status: 'ERROR', message: 'Internal server error' });
   }
 });
