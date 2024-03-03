@@ -5,6 +5,8 @@
       #wp2 {
         overflow: hidden;
         user-select: none;
+        width: 800px;
+        height: 800px;
       }
 
       #image-container {
@@ -112,17 +114,23 @@
             j = 1;
           }
           prevZoom = zoom;
+          const maxSize = 1000 * Math.pow(2, layer-1);
           console.log(` rows: ${i-1} cols: ${maxj}`)
-          wp2Container.style.gridTemplateColumns = `repeat(${maxj}, ${1000/(maxj)}px)`; // Calculate the grid columns
+          wp2Container.style.gridTemplateColumns = `repeat(${maxj}, ${maxSize/(maxj)}px)`; // Calculate the grid columns
           wp2Container.style.gap = '0';
           wp2Container.style.display = 'grid';
           // console.log("computed dim", (1000/maxj))
           for (let img of wp2Container.children) {
-            img.style.maxWidth = `${1000/(maxj)}px`;
-            img.style.maxHeight = `${1000/(i-1)}px`;
+            img.style.maxWidth = `${maxSize/(maxj)}px`;
+            img.style.maxHeight = `${maxSize/(i-1)}px`;
             const computedStyle = window.getComputedStyle(img)
             const computedWidth = parseFloat(computedStyle.width.replace('px', ''));
             const computedHeight = parseFloat(computedStyle.height.replace('px', ''));
+
+            if (max(computedWidth, computedHeight) < img.style.maxWidth) {
+              img.style.scale = `${img.style.maxWidth/computedWidth}`;
+            }
+
             if (minWidth === -1 || computedWidth < minWidth) minWidth = computedWidth;
             if (minHeight === -1 || computedHeight < minHeight) minHeight = computedHeight;
           }
