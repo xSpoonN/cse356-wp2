@@ -11,6 +11,9 @@
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": "prettier --write"
   },
+  "nodemonConfig": {
+    "ignore": ["node_modules/", "tiles/"]
+  },
   "author": "",
   "license": "ISC",
   "dependencies": {

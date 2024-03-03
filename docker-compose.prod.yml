@@ -4,10 +4,10 @@ services:
     container_name: server
     build:
       context: .
-      dockerfile: Dockerfile
-    environment:
-      - NODE_ENV=development
-    volumes:
-      - .:/app
+      dockerfile: Dockerfile.prod
     ports:
       - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./logs:/app/logs
