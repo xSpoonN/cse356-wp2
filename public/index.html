@@ -10,11 +10,12 @@
       }
 
       #image-container {
-        display: inline-block;
+        display: grid;
         width: 100%;
         height: 100%;
         max-height: 100%;
         max-width: 100%;
+        grid-auto-rows: 512px;
       }
     </style>
   </head>
@@ -40,8 +41,10 @@
         const mouseY = e.clientY - wp2.getBoundingClientRect().top;
         if (delta > 0) {
           zoom--;
+          if (zoom < 1) zoom = 1;
         } else {
           zoom++; 
+          if (zoom > 8) zoom = 8;
         }
         updateImage(mouseX, mouseY);  
       });
@@ -78,8 +81,8 @@
         });
       }
 
-      async function updateImage(mouseX = 0, mouseY = 0) {
-        if (prevZoom !== zoom) { // If the zoom has changed, we need to recompute the grid
+      async function updateImage(mouseX = 0, mouseY = 0, forceUpdate = false) {
+        if (prevZoom !== zoom || forceUpdate) { // If the zoom has changed, we need to recompute the grid
           wp2Container.innerHTML = '';
           let layer = Math.max(1, Math.min(8, Math.floor(zoom)));
           let i = 1; // Row iterator
@@ -101,6 +104,8 @@
                 const imgResp = await loadImage(img, `http://localhost:3000/tiles/l${layer}/${i}/${j}?style=${getStyle()}`, j < maxj && rowSafe);
                 if (imgResp) {
                   rowSafe = true; // We have at least one image in the row, so we can continue skipping for this row
+                  img.style.maxWidth = `512px`;
+                  img.style.maxHeight = `512px`;
                   img.style.objectFit = "cover";
                   wp2Container.appendChild(img);
                   j++;
@@ -121,30 +126,15 @@
           }
           console.log(` rows: ${i-1} cols: ${maxj}`)
           wp2Container.style.gridTemplateColumns = `repeat(${maxj}, 512px)`; // Calculate the grid columns
-          wp2Container.style.gap = '0';
-          wp2Container.style.display = 'grid';
-          // console.log("computed dim", (1000/maxj))
-          for (let img of wp2Container.children) {
-            img.style.maxWidth = `512px`;
-            img.style.maxHeight = `512px`;
-            const computedStyle = window.getComputedStyle(img)
-            const computedWidth = parseFloat(computedStyle.width.replace('px', ''));
-            const computedHeight = parseFloat(computedStyle.height.replace('px', ''));
-
-            if (Math.max(computedWidth, computedHeight) < img.style.maxWidth) {
-              console.log("scaling")
-              img.style.scale = `${img.style.maxWidth/computedWidth}`;
-            }
-          }
 
           // Scale the offset for the new zoom
           // Offset is first scaled by the zoom factor, then we modify it to keep the mouse position in the same place
           // I have no idea why the multiplier is 1 and -0.5, but it works
-          // console.log(`mouseX: ${mouseX} mouseY: ${mouseY} offsetX: ${offsetX} offsetY: ${offsetY}`)
           const zoomDirection = zoom > prevZoom;
-          offsetX = (offsetX) * (zoomDirection ? 2 : 0.5) - (mouseX * (zoomDirection ? 1 : -0.5));
-          offsetY = (offsetY) * (zoomDirection ? 2 : 0.5) - (mouseY * (zoomDirection ? 1 : -0.5));
-          // console.log(`after: offsetX: ${offsetX} offsetY: ${offsetY}`)
+          if (!forceUpdate) {
+            offsetX = (offsetX) * (zoomDirection ? 2 : 0.5) - (mouseX * (zoomDirection ? 1 : -0.5));
+            offsetY = (offsetY) * (zoomDirection ? 2 : 0.5) - (mouseY * (zoomDirection ? 1 : -0.5));
+          }
           prevZoom = zoom;
         }
         wp2Container.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
@@ -156,7 +146,7 @@
 
       document.querySelectorAll('input[name="style"]').forEach((radio) => {
         radio.addEventListener('change', () => {
-          updateImage();
+          updateImage(0, 0, true);
         });
       });
       updateImage();
