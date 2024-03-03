@@ -99,6 +99,11 @@
       }
 
       wp2.addEventListener('mousedown', handleDrag);
+      document.querySelectorAll('input[name="style"]').forEach((radio) => {
+        radio.addEventListener('change', () => {
+          updateImage();
+        });
+      });
 
       function handleDrag(e) { // Doesn't work yet, just placeholder
 
