@@ -1,0 +1,31 @@
+[2024-03-02 09:36:17 PM] 	GET /tiles/l2/2/2 404 - 5.739 ms {}
+[2024-03-02 09:37:21 PM] 	GET /tiles/l2/2/2 200 - 4.111 ms {}
+[2024-03-02 09:37:46 PM] 	GET /tiles/l2/2/2?style=bw 200 - 10.504 ms {}
+[2024-03-02 09:41:24 PM] 	GET / 200 - 3.823 ms
+[2024-03-02 09:41:53 PM] 	GET / 304 - 3.415 ms
+[2024-03-02 09:41:56 PM] 	GET / 200 - 1.600 ms
+[2024-03-02 09:42:13 PM] 	GET /index.html 200 - 1.029 ms
+[2024-03-02 09:45:46 PM] 	GET / 200 - 4.715 ms {}
+[2024-03-02 09:47:48 PM] 	GET / 404 - 3.970 ms {}
+[2024-03-02 09:56:50 PM] 	GET / 304 - 4.798 ms {}
+[2024-03-02 09:57:04 PM] 	GET / 200 - 2.381 ms {}
+[2024-03-02 09:58:01 PM] 	GET / 200 - 4.629 ms {}
+[2024-03-02 09:58:44 PM] 	GET / 200 - 4.842 ms {}
+[2024-03-02 10:21:01 PM] 	uncaughtException: path is not defined
+ReferenceError: path is not defined
+    at Object.<anonymous> (C:\Users\Spoon\OneDrive\Documents\School\2024-1 Spring\CSE356\CSE356_project_2\index.js:106:24)
+    at Module._compile (node:internal/modules/cjs/loader:1376:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1435:10)
+    at Module.load (node:internal/modules/cjs/loader:1207:32)
+    at Module._load (node:internal/modules/cjs/loader:1023:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:135:12)
+    at node:internal/main/run_main_module:28:49
+[2024-03-02 10:21:08 PM] 	uncaughtException: path is not defined
+ReferenceError: path is not defined
+    at Object.<anonymous> (C:\Users\Spoon\OneDrive\Documents\School\2024-1 Spring\CSE356\CSE356_project_2\index.js:106:24)
+    at Module._compile (node:internal/modules/cjs/loader:1376:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1435:10)
+    at Module.load (node:internal/modules/cjs/loader:1207:32)
+    at Module._load (node:internal/modules/cjs/loader:1023:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:135:12)
+    at node:internal/main/run_main_module:28:49

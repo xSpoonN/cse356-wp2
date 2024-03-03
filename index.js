@@ -5,6 +5,9 @@ const session = require('express-session');
 const MongoStore = require('connect-mongo');
 const winston = require('winston');
 const morgan = require('morgan');
+const fs = require('fs');
+const path = require('path');
+const sharp = require('sharp');
 const User = require('./User');
 const app = express();
 const PORT = 3000;
@@ -86,10 +89,9 @@ const clientPromise = mongoose
   .connect(
     'mongodb+srv://ktao87:zTFcTXa1vY7emrzk@wup2.tp4o37r.mongodb.net/?retryWrites=true&w=majority'
   )
-  .then(m => m.connection.getClient()); // @todo check if this works
+  .then(m => m.connection.getClient());
 
 app.use(morganMiddleware);
-
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
@@ -101,6 +103,7 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(
   session({
     resave: false,
@@ -115,30 +118,26 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.get('/', (req, res) => {
-  res.send('Hello World!');
+  res.sendFile(__dirname + '/public/test.html');
 });
 
 app.post('/adduser', async (req, res) => {
   // Check if username, password, and email are provided
   const { body } = req;
   if (!('username' in body && 'password' in body && 'email' in body)) {
-    return res
-      .status(400)
-      .send({
-        status: 'ERROR',
-        message: 'Username, password, and email are required',
-      });
+    return res.status(400).send({
+      status: 'ERROR',
+      message: 'Username, password, and email are required',
+    });
   }
   const { username, password, email } = body;
 
   // Check if username, password, and email are truthy value
   if (!username || !password || !email) {
-    return res
-      .status(400)
-      .send({
-        status: 'ERROR',
-        message: 'Username, password, and email are required',
-      });
+    return res.status(400).send({
+      status: 'ERROR',
+      message: 'Username, password, and email are required',
+    });
   }
 
   // Validate email
@@ -312,6 +311,33 @@ app.post('/logout', async (req, res) => {
 
       return res.status(200).send({ status: 'OK', message: 'User logged out' });
     });
+  });
+});
+
+app.get('/tiles/l:layer/:y/:x', (req, res) => {
+  const { layer, y, x } = req.params;
+  const style = req.query.style || 'color';
+  const filePath = `./tiles/l${layer}/${y}/${x}.jpg`;
+  console.log(filePath);
+
+  fs.readFile(filePath, (err, imgData) => {
+    if (err) {
+      console.error(err);
+      return res
+        .status(404)
+        .send({ status: 'ERROR', message: 'Tile not found' });
+    }
+
+    if (style == 'bw') {
+      sharp(imgData)
+        .greyscale()
+        .toBuffer()
+        .then(data => {
+          res.type('jpg').send(data);
+        });
+    } else {
+      res.type('jpg').send(imgData);
+    }
   });
 });
 
