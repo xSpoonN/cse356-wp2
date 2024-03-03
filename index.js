@@ -188,7 +188,7 @@ app.post('/adduser', async (req, res) => {
       message: 'User created successfully. Check your email for verification.',
     });
   } catch (error) {
-    logger.error(error);
+    console.error(error);
     res.status(500).send({ status: 'ERROR', message: 'Internal server error' });
   }
 });
@@ -231,7 +231,7 @@ app.get('/verify', async (req, res) => {
       .status(200)
       .send({ status: 'OK', message: 'User verified successfully' });
   } catch (error) {
-    logger.error(error);
+    console.error(error);
     res.status(500).send({ status: 'ERROR', message: 'Internal server error' });
   }
 });
