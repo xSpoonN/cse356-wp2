@@ -30,14 +30,14 @@
       let wp2 = document.getElementById('wp2');
       let wp2Container = document.getElementById('image-container');
       let prevZoom = -1;
-      let zoom = 2; 
+      let zoom = 3; 
       let offsetX = 0;
       let offsetY = 0;
 
       wp2.addEventListener('wheel', e => {
         const delta = e.deltaY;
-        const mouseX = e.clientX/*  - wp2.getBoundingClientRect().left */;
-        const mouseY = e.clientY/*  - wp2.getBoundingClientRect().top */;
+        const mouseX = e.clientX - wp2.getBoundingClientRect().left;
+        const mouseY = e.clientY - wp2.getBoundingClientRect().top;
         if (delta > 0) {
           zoom--;
         } else {
@@ -54,7 +54,6 @@
         function move(e) {
           offsetX = e.clientX - startX;
           offsetY = e.clientY - startY;
-          console.log("move")
           updateImage();
         }
 
@@ -79,7 +78,7 @@
         });
       }
 
-      async function updateImage(mouseX, mouseY) {
+      async function updateImage(mouseX = 0, mouseY = 0) {
         if (prevZoom !== zoom) { // If the zoom has changed, we need to recompute the grid
           wp2Container.innerHTML = '';
           let layer = Math.max(1, Math.min(8, Math.floor(zoom)));
@@ -133,18 +132,19 @@
             const computedHeight = parseFloat(computedStyle.height.replace('px', ''));
 
             if (Math.max(computedWidth, computedHeight) < img.style.maxWidth) {
+              console.log("scaling")
               img.style.scale = `${img.style.maxWidth/computedWidth}`;
             }
           }
-          // Scale the offset for the new zoom
-          offsetX = offsetX * (zoom > prevZoom ? 2 : 0.5);
-          offsetY = offsetY * (zoom > prevZoom ? 2 : 0.5);
-          /* const containerRect = wp2Container.getBoundingClientRect();
-          const offsetXPercent = (mouseX - offsetX) / containerRect.width;
-          const offsetYPercent = (mouseY - offsetY) / containerRect.height;
 
-          offsetX = mouseX - offsetXPercent * (containerRect.width * (zoom > prevZoom ? 2 : 0.5));
-          offsetY = mouseY - offsetYPercent * (containerRect.height * (zoom > prevZoom ? 2 : 0.5)); */
+          // Scale the offset for the new zoom
+          // Offset is first scaled by the zoom factor, then we modify it to keep the mouse position in the same place
+          // I have no idea why the multiplier is 1 and -0.5, but it works
+          // console.log(`mouseX: ${mouseX} mouseY: ${mouseY} offsetX: ${offsetX} offsetY: ${offsetY}`)
+          const zoomDirection = zoom > prevZoom;
+          offsetX = (offsetX) * (zoomDirection ? 2 : 0.5) - (mouseX * (zoomDirection ? 1 : -0.5));
+          offsetY = (offsetY) * (zoomDirection ? 2 : 0.5) - (mouseY * (zoomDirection ? 1 : -0.5));
+          // console.log(`after: offsetX: ${offsetX} offsetY: ${offsetY}`)
           prevZoom = zoom;
         }
         wp2Container.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
