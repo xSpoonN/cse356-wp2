@@ -101,7 +101,7 @@
               try {
                 // j < maxj && rowSafe is to skip waiting for the response if we already know there are at least this many images in the row
                 // This is to massively speed up the loading of the grid, since we don't have to wait for the response of the inner images.
-                const imgResp = await loadImage(img, `http://localhost:3000/tiles/l${layer}/${i}/${j}?style=${getStyle()}`, j < maxj && rowSafe);
+                const imgResp = await loadImage(img, `http://194.113.74.157:3000/tiles/l${layer}/${i}/${j}?style=${getStyle()}`, j < maxj && rowSafe);
                 if (imgResp) {
                   rowSafe = true; // We have at least one image in the row, so we can continue skipping for this row
                   img.style.maxWidth = `512px`;
