@@ -24,41 +24,47 @@
 </head>
 
 <body>
+  <% if (logged_in) { %>
   <input type="radio" name="style" value="color" checked> Color
   <input type="radio" name="style" value="bw"> Black & White
   <div id="map" style="height: 900px;"></div>
+  <% } %>
 
   <div id="wp2">
     <div id="image-container">
     </div>
   </div>
   <script>
-    const URL = <%= URL %>; //NOT SURE IF THIS IS THE CORRECT FORMAT
-    const map = L.map('map', {
-      crs: L.CRS.Simple,
-      center: [0, 0],
-      minZoom: 1,
-      maxZoom: 8,
-    }).setView([0, 0], 2);
-    const layer = L.tileLayer(`http://${URL}/tiles/l{z}/{y}/{x}?style=color`, {
-      maxZoom: 8,
-      minZoom: 1,
-      noWrap: true,
-      tileSize: 512
-    }).addTo(map);
+    var logged_in_var = "<%= logged_in %>"
+    var logged_in = logged_in_var === "true" ? true : false;
+    if (logged_in) {
+      const URL = "<%= URL %>";
+      const map = L.map('map', {
+        crs: L.CRS.Simple,
+        center: [0, 0],
+        minZoom: 1,
+        maxZoom: 8,
+      }).setView([-250, 250], 2);
+      const layer = L.tileLayer(`http://${URL}/tiles/l{z}/{y}/{x}?style=color`, {
+        maxZoom: 8,
+        minZoom: 1,
+        noWrap: true,
+        tileSize: 512
+      }).addTo(map);
 
-    document.querySelectorAll('input[name="style"]').forEach((radio) => {
-      radio.addEventListener('change', (e) => {
-        if(layer) map.removeLayer(layer);
+      document.querySelectorAll('input[name="style"]').forEach((radio) => {
+        radio.addEventListener('change', (e) => {
+          if(layer) map.removeLayer(layer);
 
-        layer = L.tileLayer(`http://${URL}/tiles/l{z}/{y}/{x}?style=${e.target.value}`, {
-          maxZoom: 8,
-          minZoom: 1,
-          noWrap: true,
-          tileSize: 512
-        }).addTo(map);
+          layer = L.tileLayer(`http://${URL}/tiles/l{z}/{y}/{x}?style=${e.target.value}`, {
+            maxZoom: 8,
+            minZoom: 1,
+            noWrap: true,
+            tileSize: 512
+          }).addTo(map);
+        });
       });
-    });
+    }
   </script>
 </body>
 

@@ -12,6 +12,9 @@ const User = require('./User');
 const app = express();
 const PORT = 3000;
 
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'public'));
+
 const { combine, timestamp, colorize, align, printf } = winston.format;
 
 // create a custom timestamp format for log statements
@@ -340,15 +343,14 @@ app.get('/tiles/l:layer/:y/:x', (req, res) => {
   });
 });
 
-const requireValidSession = (req, res, next) => {
-  if (!('username' in req.session)) {
-    return res
-      .status(401)
-      .send({ status: 'ERROR', message: 'User is not logged in' });
-  }
-  next();
-};
-app.use(requireValidSession, express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/', (req, res, next) => {
+  res.render('index', {
+    logged_in: 'username' in req.session,
+    URL: '194.113.74.157:3000',
+  });
+});
 
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}...`);
