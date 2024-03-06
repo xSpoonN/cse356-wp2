@@ -12,6 +12,9 @@ const User = require('./User');
 const app = express();
 const PORT = 3000;
 
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'public'));
+
 const { combine, timestamp, colorize, align, printf } = winston.format;
 
 // create a custom timestamp format for log statements
@@ -103,7 +106,6 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.static(path.join(__dirname, 'public')));
 app.use(
   session({
     resave: false,
@@ -116,9 +118,16 @@ app.use(
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
 
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/public/test.html');
+app.get('/', (req, res, next) => {
+  res.render('index', {
+    logged_in: 'username' in req.session,
+    URL:
+      process.env.NODE_ENV === 'production'
+        ? 'http://mygroup.cse356.compas.cs.stonybrook.edu'
+        : 'http://localhost:3000',
+  });
 });
 
 app.post('/adduser', async (req, res) => {
@@ -174,7 +183,7 @@ app.post('/adduser', async (req, res) => {
       },
     });
 
-    const verificationLink = `http://mygroup.cse356.compas.cs.stonybrook.edu/verify?email=${email}&token=${verificationKey}`;
+    const verificationLink = `http://mygroup.cse356.compas.cs.stonybrook.edu/verify?email=${encodeURIComponent(email)}&token=${verificationKey}`;
     const mailOptions = {
       from: 'mygroup@cse356.compas.cs.stonybrook.edu',
       to: email,
@@ -197,7 +206,7 @@ app.get('/verify', async (req, res) => {
   // Check if email and token are provided
   if (!('email' in req.query && 'token' in req.query)) {
     return res
-      .status(400)
+      .status(200)
       .send({ status: 'ERROR', message: 'Email and token are required' });
   }
   const { email, token } = req.query;
@@ -205,14 +214,14 @@ app.get('/verify', async (req, res) => {
   // Check if email and token are truthy value
   if (!email || !token) {
     return res
-      .status(400)
+      .status(200)
       .send({ status: 'ERROR', message: 'Email and token are required' });
   }
 
   // Validate email
   const emailRegex = /\S+@\S+\.\S+/;
   if (!emailRegex.test(email)) {
-    return res.status(400).send({ status: 'ERROR', message: 'Invalid email' });
+    return res.status(200).send({ status: 'ERROR', message: 'Invalid email' });
   }
 
   //Check if user exists and token is valid
@@ -220,7 +229,7 @@ app.get('/verify', async (req, res) => {
     const user = await User.findOne({ email, verificationToken: token });
     if (!user) {
       return res
-        .status(400)
+        .status(200)
         .send({ status: 'ERROR', message: 'Invalid verification link' });
     }
 
@@ -242,7 +251,7 @@ app.post('/login', async (req, res) => {
 
   if (!('username' in body && 'password' in body)) {
     return res
-      .status(400)
+      .status(200)
       .send({ status: 'ERROR', message: 'Username and password are required' });
   }
   const { username, password } = body;
@@ -250,7 +259,7 @@ app.post('/login', async (req, res) => {
   // Check if username and password is truthy value
   if (!username || !password) {
     return res
-      .status(400)
+      .status(200)
       .send({ status: 'ERROR', message: 'Username and password are required' });
   }
 
@@ -258,7 +267,7 @@ app.post('/login', async (req, res) => {
   const user = await User.findOne({ username });
   if (!user || user.password !== password || !user.verified) {
     return res
-      .status(400)
+      .status(200)
       .send({ status: 'ERROR', message: 'Invalid username or password' });
   }
 
@@ -287,7 +296,7 @@ app.post('/logout', async (req, res) => {
   // Check if session exists
   if (!('username' in req.session)) {
     return res
-      .status(400)
+      .status(200)
       .send({ status: 'ERROR', message: 'User is not logged in' });
   }
 
@@ -314,17 +323,16 @@ app.post('/logout', async (req, res) => {
   });
 });
 
-app.get('/tiles/l:layer/:y/:x', (req, res) => {
+app.get('/tiles/l:layer/:y/:x.jpg', (req, res) => {
   const { layer, y, x } = req.params;
   const style = req.query.style || 'color';
   const filePath = `./tiles/l${layer}/${y}/${x}.jpg`;
-  console.log(filePath);
 
   fs.readFile(filePath, (err, imgData) => {
     if (err) {
       console.error(err);
       return res
-        .status(404)
+        .status(200)
         .send({ status: 'ERROR', message: 'Tile not found' });
     }
 

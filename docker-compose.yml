@@ -8,6 +8,8 @@ services:
     environment:
       - NODE_ENV=development
     volumes:
-      - .:/app
+      - ./index.js:/app/index.js
+      - ./public/:/app/public/
+      - ./logs:/app/logs
     ports:
       - "3000:3000"
