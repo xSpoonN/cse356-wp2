@@ -103,7 +103,6 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.static(path.join(__dirname, 'public')));
 app.use(
   session({
     resave: false,
@@ -117,9 +116,9 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.get('/', (req, res) => {
+/* app.get('/', (req, res) => {
   res.sendFile(__dirname + '/public/test.html');
-});
+}); */
 
 app.post('/adduser', async (req, res) => {
   // Check if username, password, and email are provided
@@ -340,6 +339,16 @@ app.get('/tiles/l:layer/:y/:x', (req, res) => {
     }
   });
 });
+
+const requireValidSession = (req, res, next) => {
+  if (!('username' in req.session)) {
+    return res
+      .status(401)
+      .send({ status: 'ERROR', message: 'User is not logged in' });
+  }
+  next();
+};
+app.use(requireValidSession, express.static(path.join(__dirname, 'public')));
 
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}...`);
