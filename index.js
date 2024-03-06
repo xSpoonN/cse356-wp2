@@ -125,7 +125,7 @@ app.post('/adduser', async (req, res) => {
   // Check if username, password, and email are provided
   const { body } = req;
   if (!('username' in body && 'password' in body && 'email' in body)) {
-    return res.status(400).send({
+    return res.status(200).send({
       status: 'ERROR',
       message: 'Username, password, and email are required',
     });
@@ -134,7 +134,7 @@ app.post('/adduser', async (req, res) => {
 
   // Check if username, password, and email are truthy value
   if (!username || !password || !email) {
-    return res.status(400).send({
+    return res.status(200).send({
       status: 'ERROR',
       message: 'Username, password, and email are required',
     });
@@ -143,14 +143,14 @@ app.post('/adduser', async (req, res) => {
   // Validate email
   const emailRegex = /\S+@\S+\.\S+/;
   if (!emailRegex.test(email)) {
-    return res.status(400).send({ status: 'ERROR', message: 'Invalid email' });
+    return res.status(200).send({ status: 'ERROR', message: 'Invalid email' });
   }
 
   try {
     const existingUser = await User.findOne({ $or: [{ username }, { email }] }); // Check if the username or email already exists
     if (existingUser) {
       return res
-        .status(400)
+        .status(200)
         .send({ status: 'ERROR', message: 'User already exists' });
     }
 
@@ -197,7 +197,7 @@ app.get('/verify', async (req, res) => {
   // Check if email and token are provided
   if (!('email' in req.query && 'token' in req.query)) {
     return res
-      .status(400)
+      .status(200)
       .send({ status: 'ERROR', message: 'Email and token are required' });
   }
   const { email, token } = req.query;
@@ -205,14 +205,14 @@ app.get('/verify', async (req, res) => {
   // Check if email and token are truthy value
   if (!email || !token) {
     return res
-      .status(400)
+      .status(200)
       .send({ status: 'ERROR', message: 'Email and token are required' });
   }
 
   // Validate email
   const emailRegex = /\S+@\S+\.\S+/;
   if (!emailRegex.test(email)) {
-    return res.status(400).send({ status: 'ERROR', message: 'Invalid email' });
+    return res.status(200).send({ status: 'ERROR', message: 'Invalid email' });
   }
 
   //Check if user exists and token is valid
@@ -220,7 +220,7 @@ app.get('/verify', async (req, res) => {
     const user = await User.findOne({ email, verificationToken: token });
     if (!user) {
       return res
-        .status(400)
+        .status(200)
         .send({ status: 'ERROR', message: 'Invalid verification link' });
     }
 
@@ -242,7 +242,7 @@ app.post('/login', async (req, res) => {
 
   if (!('username' in body && 'password' in body)) {
     return res
-      .status(400)
+      .status(200)
       .send({ status: 'ERROR', message: 'Username and password are required' });
   }
   const { username, password } = body;
@@ -250,7 +250,7 @@ app.post('/login', async (req, res) => {
   // Check if username and password is truthy value
   if (!username || !password) {
     return res
-      .status(400)
+      .status(200)
       .send({ status: 'ERROR', message: 'Username and password are required' });
   }
 
@@ -258,7 +258,7 @@ app.post('/login', async (req, res) => {
   const user = await User.findOne({ username });
   if (!user || user.password !== password || !user.verified) {
     return res
-      .status(400)
+      .status(200)
       .send({ status: 'ERROR', message: 'Invalid username or password' });
   }
 
@@ -287,7 +287,7 @@ app.post('/logout', async (req, res) => {
   // Check if session exists
   if (!('username' in req.session)) {
     return res
-      .status(400)
+      .status(200)
       .send({ status: 'ERROR', message: 'User is not logged in' });
   }
 
@@ -324,7 +324,7 @@ app.get('/tiles/l:layer/:y/:x', (req, res) => {
     if (err) {
       console.error(err);
       return res
-        .status(404)
+        .status(200)
         .send({ status: 'ERROR', message: 'Tile not found' });
     }
 
