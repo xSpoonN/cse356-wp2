@@ -328,6 +328,12 @@ app.get('/tiles/l:layer/:y/:x.jpg', (req, res) => {
   const style = req.query.style || 'color';
   const filePath = `./tiles/l${layer}/${y}/${x}.jpg`;
 
+  if (!('username' in req.session)) {
+    return res
+      .status(200)
+      .send({ status: 'ERROR', message: 'User is not logged in' });
+  }
+
   fs.readFile(filePath, (err, imgData) => {
     if (err) {
       console.error(err);
