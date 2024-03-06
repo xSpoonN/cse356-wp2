@@ -24,6 +24,18 @@
 </head>
 
 <body>
+  <div id="login-container">
+    <% if (!logged_in) { %>
+      <label for="username">Username:</label>
+      <input type="text" id="username" name="username">
+      <label for="password">Password:</label>
+      <input type="password" id="password" name="password">
+      <button onclick="login()">Login</button>
+    <% } else { %>
+      <button onclick="logout()">Logout</button>
+    <% } %>
+  </div>
+
   <% if (logged_in) { %>
   <input type="radio" name="style" value="color" checked> Color
   <input type="radio" name="style" value="bw"> Black & White
@@ -35,6 +47,39 @@
     </div>
   </div>
   <script>
+    function login() {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+
+      fetch('/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      })
+        .then(response => response.json())
+        .then(data => {
+          window.location.reload();
+        })
+        .catch(error => {
+          console.error('Error during login:', error);
+        });
+    }
+
+    function logout() {
+      fetch('/logout', {
+        method: 'POST',
+      })
+        .then(response => response.json())
+        .then(data => {
+          window.location.reload();
+        })
+        .catch(error => {
+          console.error('Error during logout:', error);
+        });
+    }
+
     var logged_in_var = "<%= logged_in %>"
     var logged_in = logged_in_var === "true" ? true : false;
     if (logged_in) {
@@ -44,7 +89,7 @@
         center: [0, 0],
         minZoom: 1,
         maxZoom: 8,
-      }).setView([-250, 250], 2);
+      }).setView([-250, 350], 2);
       const layer = L.tileLayer(`http://${URL}/tiles/l{z}/{y}/{x}?style=color`, {
         maxZoom: 8,
         minZoom: 1,
