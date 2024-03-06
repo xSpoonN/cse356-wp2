@@ -12,6 +12,9 @@ const User = require('./User');
 const app = express();
 const PORT = 3000;
 
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'public'));
+
 const { combine, timestamp, colorize, align, printf } = winston.format;
 
 // create a custom timestamp format for log statements
@@ -103,7 +106,6 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.static(path.join(__dirname, 'public')));
 app.use(
   session({
     resave: false,
@@ -116,9 +118,16 @@ app.use(
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
 
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/public/test.html');
+app.get('/', (req, res, next) => {
+  res.render('index', {
+    logged_in: 'username' in req.session,
+    URL:
+      process.env.NODE_ENV === 'production'
+        ? 'http://mygroup.cse356.compas.cs.stonybrook.edu'
+        : 'http://localhost:3000',
+  });
 });
 
 app.post('/adduser', async (req, res) => {
@@ -174,7 +183,7 @@ app.post('/adduser', async (req, res) => {
       },
     });
 
-    const verificationLink = `http://mygroup.cse356.compas.cs.stonybrook.edu/verify?email=${email}&token=${verificationKey}`;
+    const verificationLink = `http://mygroup.cse356.compas.cs.stonybrook.edu/verify?email=${encodeURIComponent(email)}&token=${verificationKey}`;
     const mailOptions = {
       from: 'mygroup@cse356.compas.cs.stonybrook.edu',
       to: email,
@@ -314,11 +323,10 @@ app.post('/logout', async (req, res) => {
   });
 });
 
-app.get('/tiles/l:layer/:y/:x', (req, res) => {
+app.get('/tiles/l:layer/:y/:x.jpg', (req, res) => {
   const { layer, y, x } = req.params;
   const style = req.query.style || 'color';
   const filePath = `./tiles/l${layer}/${y}/${x}.jpg`;
-  console.log(filePath);
 
   fs.readFile(filePath, (err, imgData) => {
     if (err) {
