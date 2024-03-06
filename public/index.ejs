@@ -45,7 +45,7 @@
         minZoom: 1,
         maxZoom: 8,
       }).setView([-250, 250], 2);
-      const layer = L.tileLayer(`http://${URL}/tiles/l{z}/{y}/{x}?style=color`, {
+      const layer = L.tileLayer(`${URL}/tiles/l{z}/{y}/{x}.jpg?style=color`, {
         maxZoom: 8,
         minZoom: 1,
         noWrap: true,
@@ -56,7 +56,7 @@
         radio.addEventListener('change', (e) => {
           if(layer) map.removeLayer(layer);
 
-          layer = L.tileLayer(`http://${URL}/tiles/l{z}/{y}/{x}?style=${e.target.value}`, {
+          layer = L.tileLayer(`${URL}/tiles/l{z}/{y}/{x}.jpg?style=${e.target.value}`, {
             maxZoom: 8,
             minZoom: 1,
             noWrap: true,

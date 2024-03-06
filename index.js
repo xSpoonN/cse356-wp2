@@ -118,10 +118,17 @@ app.use(
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
 
-/* app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/public/test.html');
-}); */
+app.get('/', (req, res, next) => {
+  res.render('index', {
+    logged_in: 'username' in req.session,
+    URL:
+      process.env.NODE_ENV === 'production'
+        ? 'http://mygroup.cse356.compas.cs.stonybrook.edu'
+        : 'http://localhost:3000',
+  });
+});
 
 app.post('/adduser', async (req, res) => {
   // Check if username, password, and email are provided
@@ -316,11 +323,10 @@ app.post('/logout', async (req, res) => {
   });
 });
 
-app.get('/tiles/l:layer/:y/:x', (req, res) => {
+app.get('/tiles/l:layer/:y/:x.jpg', (req, res) => {
   const { layer, y, x } = req.params;
   const style = req.query.style || 'color';
   const filePath = `./tiles/l${layer}/${y}/${x}.jpg`;
-  console.log(filePath);
 
   fs.readFile(filePath, (err, imgData) => {
     if (err) {
@@ -340,15 +346,6 @@ app.get('/tiles/l:layer/:y/:x', (req, res) => {
     } else {
       res.type('jpg').send(imgData);
     }
-  });
-});
-
-app.use(express.static(path.join(__dirname, 'public')));
-
-app.get('/', (req, res, next) => {
-  res.render('index', {
-    logged_in: 'username' in req.session,
-    URL: '194.113.74.157:3000',
   });
 });
 
